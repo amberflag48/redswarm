@@ -1,0 +1,25 @@
+# Rust build output
+/target/
+
+# SQLite databases (contain runtime/audit data - never commit)
+*.db
+*.db-shm
+*.db-wal
+
+# Generated frontend bundle (run ./build.sh to regenerate)
+/frontend/bundle.*.js
+/frontend/bundle.css
+
+# Environment / secrets
+.env
+.env.*
+
+# Editor / OS files
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Logs
+*.log

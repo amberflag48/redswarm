@@ -1,0 +1,22 @@
+@layer capture {
+/* Capture progress bar */
+.progress-bar { display: flex; gap: 2px; height: 32px; border-radius: var(--radius-lg); overflow: hidden; background: var(--surface2); }
+.progress-seg { flex: 1; display: flex; align-items: center; justify-content: center; font-size: var(--fs-0-72); font-weight: 600; color: var(--muted); background: var(--surface2); position: relative; transition: background 250ms ease, color 250ms ease; }
+.progress-seg + .progress-seg::before { content: ''; position: absolute; left: -1px; top: 6px; bottom: 6px; width: 1px; background: var(--border); }
+.progress-seg.active { color: var(--on-accent); background: var(--accent); }
+.progress-seg.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink); animation: progress-pulse 1.2s ease-in-out infinite; }
+.progress-seg.done { color: var(--ink); background: var(--green); }
+.capture-field { display: grid; grid-template-columns: 130px 1fr; gap: var(--space-0-4); padding: var(--space-0-35) 0; border-bottom: 1px solid var(--surface2); }
+.capture-field .key { color: var(--muted); font-size: var(--fs-meta); font-weight: 500; }
+.capture-field .val { font-family: var(--font-mono); font-size: var(--fs-meta); word-break: break-all; }
+.capture-field .val.pending { color: var(--muted); font-style: italic; }
+
+/* Capture modal content (replace inline style="..." attributes) */
+.capture-note { color: var(--muted); font-size: var(--fs-0-82); }
+.capture-note-spaced { margin-bottom: var(--space-0-75); }
+.capture-divider { padding-top: var(--space-0-75); border-top: 1px solid var(--border); }
+.capture-summary { cursor: pointer; color: var(--muted); font-size: var(--fs-meta); user-select: none; }
+.capture-snippet-header { display: flex; align-items: center; justify-content: space-between; }
+.capture-complete-label { font-size: var(--fs-0-8); color: var(--muted); font-weight: 500; }
+.capture-actions { display: flex; gap: var(--space-0-5); }
+}

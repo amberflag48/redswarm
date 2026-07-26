@@ -1,0 +1,82 @@
+@layer modal {
+/* Modal
+ Show/hide is compositor-only: .modal-overlay.modal-closed keeps display:flex
+ (set on .modal-overlay) and toggles only visibility + opacity + pointer-events.
+ The overlay is laid out once at first paint, then toggling is a layer-only
+ opacity change - no main-thread layout, so it lands in ONE vsync (~16ms)
+ instead of TWO (~30ms). will-change:opacity pre-promotes the layer.
+ transition on visibility is delayed so the fade-out is visible before the
+ element becomes invisible; on show, visibility flips instantly then opacity
+ fades in. */
+.modal-overlay { position: fixed; inset: 0; background: var(--overlay-backdrop); display: flex; align-items: center; justify-content: center; z-index: var(--z-modal); padding: var(--space-1); contain: layout style paint; will-change: opacity; transition: opacity 120ms ease, visibility 0s; }
+.modal-overlay.modal-closed { visibility: hidden; opacity: 0; pointer-events: none; transition: opacity 120ms ease, visibility 0s 120ms; }
+#capture-modal { z-index: var(--z-modal-capture); }
+#confirm-modal { z-index: var(--z-modal-confirm); }
+.modal { background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: var(--modal-width); max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; }
+.modal-narrow { max-width: var(--modal-width-confirm); }
+.modal-capture { max-width: var(--modal-width-capture); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-1) var(--space-1-25); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface3); z-index: var(--z-sticky); }
+.modal-body { padding: var(--space-1-25); }
+.modal-close { font-size: var(--fs-1-2); color: var(--muted); padding: var(--space-0-25) var(--space-0-5); }
+.modal-close:hover { color: var(--fg); }
+
+/* Settings modal */
+.settings-modal { max-width: var(--modal-width-settings); display: flex; flex-direction: column; height: 90vh; max-height: 90vh; overflow: hidden; }
+.settings-layout { display: grid; grid-template-columns: 150px 1fr; flex: 1 1 auto; min-height: 0; }
+.settings-nav { display: flex; flex-direction: column; gap: var(--space-0-2); padding: var(--space-0-75) var(--space-0-5); border-right: 1px solid var(--border); overflow-y: auto; }
+.settings-nav button { text-align: left; padding: var(--space-0-4) var(--space-0-6); font-size: var(--fs-meta); border-radius: var(--radius-md); color: var(--muted); border: 1px solid transparent; transition: color 150ms, background-color 150ms, border-color 150ms; }
+.settings-nav button.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.settings-nav button:hover:not(.active) { color: var(--fg); background: var(--surface2); }
+.settings-content { padding: var(--space-0-75) var(--space-1-25); overflow-y: auto; }
+.settings-pane { display: none; }
+.settings-pane.active { display: block; }
+/* Two-column field layout for all settings panes except clients.
+ Fixed columns - no auto-fit, no responsive collapse - so the layout
+ stays stable across panes (prevents width recalculation on switch). */
+.settings-pane[data-section]:not([data-section="clients"]) .field {
+ display: flex; flex-direction: column;
+}
+.settings-pane[data-section]:not([data-section="clients"]) {
+ display: none;
+ grid-template-columns: 1fr 1fr;
+ gap: var(--space-0-75) var(--space-1-25);
+}
+.settings-pane.active[data-section]:not([data-section="clients"]) {
+ display: grid;
+}
+.settings-footer { padding: var(--space-0-75) var(--space-1-25); border-top: 1px solid var(--border); flex-shrink: 0; }
+.settings-footer .btn-row { margin-top: 0; }
+.settings-clients-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-0-75); }
+.settings-clients-header .hint { margin: 0; }
+.settings-clients-actions { display: flex; gap: var(--space-0-5); }
+.client-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: var(--space-0-5); transition: border-color 150ms; }
+.client-card:hover { border-color: var(--border-strong); }
+.client-card.expanded { border-color: var(--accent); }
+.client-card-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-0-5); cursor: pointer; user-select: none; padding: var(--space-0-6) var(--space-0-75); }
+.client-card-header .card-title { font-size: var(--fs-meta); display: flex; align-items: center; gap: var(--space-0-35); font-weight: 500; }
+.client-card-header .chevron { transition: transform 200ms; color: var(--muted); font-size: var(--fs-micro); }
+.client-card.collapsed .chevron { transform: rotate(-90deg); }
+.client-card-header .btn { height: 26px; padding: 0 var(--space-0-6); font-size: var(--fs-0-72); flex-shrink: 0; }
+.client-card-body { padding: 0 var(--space-0-75) var(--space-0-75); }
+.client-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-0-6) var(--space-0-75); margin-bottom: var(--space-0-5); }
+.client-section:last-child { margin-bottom: 0; }
+.section-divider { margin-top: var(--space-0-75); padding-top: var(--space-0-75); border-top: 1px solid var(--border); }
+.field-group-label { font-size: var(--fs-label); font-weight: 600; text-transform: var(--track-uppercase); letter-spacing: var(--ls-wide); color: var(--accent); margin: 0 0 var(--space-0-6); }
+.field.error input, .field.error select, .field.error textarea { border-color: var(--red); }
+.field-error { font-size: var(--fs-label); color: var(--red); margin-top: var(--space-0-2); }
+.req { color: var(--red); margin-left: 0.15rem; }
+
+/* New-task config heading */
+.config-title { font-size: var(--fs-0-8); }
+
+/* Confirm dialog */
+.confirm-title { font-size: var(--fs-0-95); }
+.confirm-message { font-size: var(--fs-0-8125); line-height: 1.6; color: var(--fg-secondary); }
+.confirm-buttons { display: flex; gap: var(--space-0-5); justify-content: flex-end; margin-top: var(--space-1-25); }
+
+@media (max-width: 600px) {
+ .settings-layout { grid-template-columns: 1fr; }
+ .settings-nav { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
+ .settings-nav button { white-space: nowrap; }
+}
+}

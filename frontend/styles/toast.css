@@ -1,0 +1,7 @@
+@layer toast {
+/* Toast */
+#toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column-reverse; gap: var(--space-0-5); z-index: var(--z-toast); }
+.toast { background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-0-75) var(--space-1); font-size: var(--fs-0-82); box-shadow: var(--shadow); animation: slidein 200ms ease; transition: opacity 200ms; max-width: 360px; }
+.toast.error { border-color: var(--red); color: var(--red); }
+.toast.success { border-color: var(--green); color: var(--green); }
+}

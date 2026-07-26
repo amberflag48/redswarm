@@ -1,0 +1,45 @@
+@layer tokens, base, layout, components, modal, log, capture, toast, animations;
+
+@layer tokens {
+:root {
+    color-scheme: dark;
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #12141c; --surface3: #23262f;
+    --border: #2a2e3a; --border-strong: #3a4050;
+    --fg: #e6e8ee; --fg-secondary: #c4c9d6; --muted: #9aa0b0;
+    --accent: #a8525a; --accent-soft: rgba(168,82,90,.15); --accent-faint: rgba(168,82,90,.08);
+    --green: #34d399; --red: #f87171; --amber: #f59e0b;
+    /* Hover overlay for subtle interactive surfaces - a faint white wash. */
+    --hover-overlay: rgba(255,255,255,.04);
+    /* Text-on-color: each background token has a matching foreground for
+       buttons/badges. --ink (dark) for the bright green/red/amber; pure
+       white for the muted crimson accent (which is too mid-tone for dark
+       text to reach WCAG AA 4.5:1). */
+    --ink: #0f1117;
+    --on-accent: #ffffff;
+    --radius: 10px;
+    --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px; --radius-xl: 12px; --radius-pill: 999px;
+    --radius-circle: 50%;
+    --shadow: 0 4px 12px rgba(0,0,0,.3);
+    --overlay-backdrop: rgba(0,0,0,.6);
+    --font-sans: system-ui, -apple-system, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --z-sticky: 1; --z-modal: 50; --z-modal-capture: 60; --z-modal-confirm: 70; --z-toast: 100;
+    --fs-label: 0.68rem; --fs-meta: 0.78rem; --fs-micro: 0.65rem;
+    --fs-1: 1rem; --fs-0-82: 0.82rem; --fs-0-8: 0.8rem; --fs-0-75: 0.75rem; --fs-0-72: 0.72rem;
+    --fs-1-1: 1.1rem; --fs-0-875: 0.875rem; --fs-0-85: 0.85rem; --fs-0-9: 0.9rem;
+    --fs-0-74: 0.74rem; --fs-0-8125: 0.8125rem; --fs-1-2: 1.2rem; --fs-0-95: 0.95rem;
+    --fs-0-62: 0.62rem; --fs-0-6: 0.6rem;
+    /* Spacing scale - value-named (matching the --fs-* convention). Single
+       source of truth for the spacing values reused 3+ times across the app,
+       so a spacing change is one edit not N. One-off spacing values (1×-2×
+       frequency) stay literal; 0 and auto are always literal. */
+    --space-0-2: 0.2rem; --space-0-25: 0.25rem; --space-0-3: 0.3rem; --space-0-35: 0.35rem;
+    --space-0-4: 0.4rem; --space-0-5: 0.5rem; --space-0-6: 0.6rem; --space-0-75: 0.75rem;
+    --space-1: 1rem; --space-1-25: 1.25rem;
+    --track-uppercase: uppercase; --ls-wide: 0.04em; --ls-narrow: 0.03em; --ls-wider: 0.05em;
+    --modal-width: 640px; --modal-width-settings: 860px; --modal-width-capture: 600px; --modal-width-confirm: 420px;
+}
+
+.hidden { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+}

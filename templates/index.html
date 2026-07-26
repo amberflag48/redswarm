@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="color-scheme" content="dark">
+ <meta name="theme-color" content="#0f1117">
+ <meta name="description" content="A hands-free, sophisticated P2P ratio cheater for private BitTorrent trackers.">
+ <meta property="og:type" content="website">
+ <meta property="og:title" content="RedSwarm">
+ <meta property="og:description" content="A hands-free, sophisticated P2P ratio cheater for private BitTorrent trackers.">
+ <meta property="og:image" content="/static/og.png">
+ <link rel="icon" href="/static/favicon.svg">
+ <title>RedSwarm</title>
+ <style>@layer tokens, base, layout, components, modal, log, capture, toast, animations;
+
+@layer tokens {
+:root {
+    color-scheme: dark;
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #12141c; --surface3: #23262f;
+    --border: #2a2e3a; --border-strong: #3a4050;
+    --fg: #e6e8ee; --fg-secondary: #c4c9d6; --muted: #9aa0b0;
+    --accent: #a8525a; --accent-soft: rgba(168,82,90,.15); --accent-faint: rgba(168,82,90,.08);
+    --green: #34d399; --red: #f87171; --amber: #f59e0b;
+    /* Hover overlay for subtle interactive surfaces - a faint white wash. */
+    --hover-overlay: rgba(255,255,255,.04);
+    /* Text-on-color: each background token has a matching foreground for
+       buttons/badges. --ink (dark) for the bright green/red/amber; pure
+       white for the muted crimson accent (which is too mid-tone for dark
+       text to reach WCAG AA 4.5:1). */
+    --ink: #0f1117;
+    --on-accent: #ffffff;
+    --radius: 10px;
+    --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px; --radius-xl: 12px; --radius-pill: 999px;
+    --radius-circle: 50%;
+    --shadow: 0 4px 12px rgba(0,0,0,.3);
+    --overlay-backdrop: rgba(0,0,0,.6);
+    --font-sans: system-ui, -apple-system, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --z-sticky: 1; --z-modal: 50; --z-modal-capture: 60; --z-modal-confirm: 70; --z-toast: 100;
+    --fs-label: 0.68rem; --fs-meta: 0.78rem; --fs-micro: 0.65rem;
+    --fs-1: 1rem; --fs-0-82: 0.82rem; --fs-0-8: 0.8rem; --fs-0-75: 0.75rem; --fs-0-72: 0.72rem;
+    --fs-1-1: 1.1rem; --fs-0-875: 0.875rem; --fs-0-85: 0.85rem; --fs-0-9: 0.9rem;
+    --fs-0-74: 0.74rem; --fs-0-8125: 0.8125rem; --fs-1-2: 1.2rem; --fs-0-95: 0.95rem;
+    --fs-0-62: 0.62rem; --fs-0-6: 0.6rem;
+    /* Spacing scale - value-named (matching the --fs-* convention). Single
+       source of truth for the spacing values reused 3+ times across the app,
+       so a spacing change is one edit not N. One-off spacing values (1×-2×
+       frequency) stay literal; 0 and auto are always literal. */
+    --space-0-2: 0.2rem; --space-0-25: 0.25rem; --space-0-3: 0.3rem; --space-0-35: 0.35rem;
+    --space-0-4: 0.4rem; --space-0-5: 0.5rem; --space-0-6: 0.6rem; --space-0-75: 0.75rem;
+    --space-1: 1rem; --space-1-25: 1.25rem;
+    --track-uppercase: uppercase; --ls-wide: 0.04em; --ls-narrow: 0.03em; --ls-wider: 0.05em;
+    --modal-width: 640px; --modal-width-settings: 860px; --modal-width-capture: 600px; --modal-width-confirm: 420px;
+}
+
+.hidden { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+}
+@layer base {
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--fg); font: var(--fs-0-875)/1.5 var(--font-sans); font-feature-settings: "liga" 1, "calt" 1, "ss02" 1; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+button:active { transform: translateY(1px); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm);
+}
+input, select, textarea {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--fg);
+    padding: var(--space-0-5) 0.65rem; border-radius: var(--radius); font: inherit; width: 100%;
+    transition: border-color 150ms;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+}
+@layer layout {
+/* Layout */
+.app { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); padding: var(--space-0-75) 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+.topbar h1 { font-size: var(--fs-1-1); font-weight: 650; white-space: nowrap; }
+.topbar-logo { height: 28px; width: 28px; flex-shrink: 0; color: var(--accent); }
+.topbar .spacer { flex: 1; }
+.topbar .stats { display: flex; gap: var(--space-1); margin-left: auto; }
+.stat .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .lbl { font-size: var(--fs-micro); color: var(--muted); text-transform: var(--track-uppercase); letter-spacing: var(--ls-wide); }
+.topbar .stat { text-align: right; }
+.topbar-actions { display: inline-flex; align-items: center; gap: var(--space-0-5); }
+.body { padding: var(--space-1-25); contain: layout style paint; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: var(--space-1); overflow: hidden; }
+.card-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-0-75) var(--space-1); border-bottom: 1px solid var(--border); }
+.card-title { font-size: var(--fs-0-85); font-weight: 600; }
+.card-body { padding: var(--space-1); }
+
+/* Table */
+.table-wrap { overflow-x: auto; position: relative; min-height: 200px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums slashed-zero; }
+th, td { text-align: left; padding: var(--space-0-4) var(--space-0-6); border-bottom: 1px solid var(--border); font-size: var(--fs-meta); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: var(--fs-label); text-transform: var(--track-uppercase); letter-spacing: var(--ls-narrow); position: sticky; top: 0; background: var(--surface); z-index: var(--z-sticky); }
+th.num, td.num { text-align: right; }
+td.name-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+tbody tr:hover { background: var(--accent-soft); }
+tbody tr.active { background: var(--accent-faint); border-left: 3px solid var(--accent); }
+.task-table tbody tr { cursor: pointer; content-visibility: auto; contain-intrinsic-size: auto 33px; }
+.mono { font-family: var(--font-mono); font-size: var(--fs-0-74); font-variant-numeric: tabular-nums slashed-zero; }
+
+/* Responsive */
+/* Grid/flex items default to min-width:auto, which expands the page to
+ fit the wide task table. min-width:0 lets .table-wrap scroll
+ internally instead of pushing the whole page wide. */
+.app > * { min-width: 0; }
+
+/* Tablet (≤1024px): hide secondary task columns to avoid horizontal scroll.
+ Column order: 1=Name 2=Tracker 3=Client 4=Mode 5=Strategy 6=Uploaded 7=Downloaded 8=Status 9=Created 10=Actions */
+@media (max-width: 1024px) {
+ .task-table th:nth-child(2), .task-table td:nth-child(2),
+ .task-table th:nth-child(3), .task-table td:nth-child(3),
+ .task-table th:nth-child(5), .task-table td:nth-child(5),
+ .task-table th:nth-child(9), .task-table td:nth-child(9) { display: none; }
+}
+
+/* Mobile (≤768px): task table → stacked cards, topbar reflows */
+@media (max-width: 768px) {
+ .topbar { padding: var(--space-0-5) var(--space-0-75); gap: var(--space-0-5); }
+ .topbar h1 { font-size: var(--fs-1); }
+ .topbar-logo { height: 24px; }
+ .topbar .spacer { display: none; }
+ .topbar .stats { gap: var(--space-0-75); }
+ .body { padding: var(--space-0-75); }
+
+ .task-table thead { display: none; }
+ .task-table, .task-table tbody { display: block; width: 100%; }
+ .task-table tr { display: block; border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: var(--space-0-5); padding: var(--space-0-5) var(--space-0-75); }
+ .task-table tr:hover { background: var(--accent-soft); }
+ .task-table tr.active { background: var(--accent-faint); border-color: var(--accent); border-left-width: 1px; }
+ .task-table td { display: flex; justify-content: space-between; align-items: center; gap: var(--space-0-75); border-bottom: none; padding: var(--space-0-25) 0; white-space: normal; overflow-wrap: anywhere; }
+ .task-table td::before { content: attr(data-label); color: var(--muted); font-size: var(--fs-label); text-transform: var(--track-uppercase); letter-spacing: var(--ls-narrow); flex-shrink: 0; overflow-wrap: normal; }
+ .task-table td.name-cell { font-weight: 600; font-size: var(--fs-0-85); max-width: none; overflow: visible; text-overflow: clip; padding-bottom: var(--space-0-35); margin-bottom: var(--space-0-25); border-bottom: 1px solid var(--border); }
+ .task-table td.name-cell::before { display: none; }
+ .task-table td.actions { justify-content: flex-end; padding-top: var(--space-0-35); border-top: 1px solid var(--border); }
+ .task-table td.actions::before { display: none; }
+ .task-table td.actions { flex-wrap: wrap; }
+ .task-table td.actions button { min-height: 44px; min-width: 44px; padding: var(--space-0-4) 0.8rem; }
+
+ .info-grid { grid-template-columns: 1fr; }
+}
+}
+@layer components {
+/* Badges */
+.badge { display: inline-block; padding: 0.1rem var(--space-0-4); border-radius: var(--radius-sm); font-size: var(--fs-micro); font-weight: 600; text-transform: var(--track-uppercase); letter-spacing: var(--ls-wide); }
+.badge.idle { background: var(--border); color: var(--muted); }
+.badge.running { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
+.badge.stopped { background: color-mix(in srgb, var(--muted) 14%, transparent); color: var(--muted); }
+.badge.ok { color: var(--green); }
+.badge.fail { color: var(--red); }
+
+/* Action buttons */
+.actions { display: flex; gap: var(--space-0-3); }
+.actions button { padding: var(--space-0-25) 0.55rem; font-size: var(--fs-label); border-radius: var(--radius-md); min-height: 28px; transition: filter 100ms, transform 60ms ease-out; }
+.actions button:hover { filter: brightness(1.15); }
+.actions button:active { transform: scale(0.97); }
+.act-start { background: var(--accent); color: var(--on-accent); }
+.act-stop { background: var(--red); color: var(--ink); }
+.act-edit { background: var(--surface2); border: 1px solid var(--border); color: var(--fg); }
+.act-del { background: transparent; border: 1px solid color-mix(in srgb, var(--red) 40%, transparent); color: var(--red); }
+
+/* Form */
+label { display: block; font-size: var(--fs-meta); font-weight: 500; margin-bottom: var(--space-0-3); }
+.hint { font-size: var(--fs-label); color: var(--muted); margin-top: var(--space-0-2); }
+.field { margin-bottom: var(--space-0-75); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-0-75); }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: var(--space-0-75); }
+@media (max-width: 600px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+/* Input group */
+.input-group { display: flex; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); overflow: hidden; }
+.input-group:focus-within { border-color: var(--accent); }
+.input-group input { flex: 1; border: none; background: transparent; }
+.input-group input:focus { outline: none; }
+.input-group select { width: auto; border: none; border-left: 1px solid var(--border); background: var(--surface); color: var(--fg); font-size: var(--fs-0-75); padding: var(--space-0-5); cursor: pointer; border-radius: 0; }
+
+/* Segmented */
+.segmented { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; }
+.segmented button { flex: 1; padding: var(--space-0-4) var(--space-0-6); font-size: var(--fs-0-75); border-radius: var(--radius-md); color: var(--muted); font-weight: 500; transition: color 150ms, background-color 150ms; }
+.segmented button.active { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.segmented button:hover:not(.active) { color: var(--fg); background: var(--hover-overlay); }
+
+/* Toggle */
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-0-5); cursor: pointer; }
+.switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .track { position: absolute; inset: 0; background: var(--border); border-radius: var(--radius-pill); transition: background-color 200ms; }
+.switch .thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: var(--fg); border-radius: var(--radius-circle); transition: transform 200ms; pointer-events: none; }
+.switch input:checked + .track { background: var(--accent); }
+.switch input:checked + .track .thumb { transform: translateX(18px); }
+.switch input:focus-visible + .track { box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* Conditional (single-block expand/collapse) */
+.conditional { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease; }
+.conditional > div { overflow: hidden; }
+.conditional.open { grid-template-rows: 1fr; }
+.conditional.open > div { padding-top: var(--space-0-75); }
+
+/* Tab panels (multi-panel switch, zero CLS) */
+/* Both panels are stacked at the same position via absolute positioning. The
+ container has a min-height so its height doesn't change when the active
+ panel's content height differs. The inactive panel is visually hidden but
+ stays in the DOM (no display:none → no reflow). Adding a new tab = add a
+ .tab-panel div with data-tab-content - no JS or CSS change needed. */
+.tab-panel { position: absolute; inset: 0; }
+.tab-panel.inactive { visibility: hidden; pointer-events: none; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-0-4); background: var(--accent); color: var(--on-accent); height: 32px; padding: 0 0.875rem; border-radius: var(--radius-lg); font-weight: 500; font-size: var(--fs-0-8125); line-height: 1; white-space: nowrap; transition: filter 120ms ease, transform 60ms ease-out, background-color 120ms ease, border-color 120ms ease; }
+.btn:hover { filter: brightness(1.08); }
+.btn:active { transform: translateY(1px); filter: brightness(0.96); }
+.btn:disabled { opacity: 0.4; cursor: default; filter: none; transform: none; }
+.btn.loading { color: transparent; position: relative; }
+.btn.loading::after { content: ''; position: absolute; inset: 0; margin: auto; width: 14px; height: 14px; border: 2px solid color-mix(in srgb, var(--ink) 30%, transparent); border-top-color: var(--ink); border-radius: var(--radius-circle); animation: spin .7s linear infinite; }
+.btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); filter: none; }
+.btn-warning { background: var(--amber); color: var(--ink); }
+.btn-warning:hover { filter: brightness(1.08); }
+.btn-danger { background: var(--red); color: var(--ink); }
+.btn-danger:hover { filter: brightness(1.08); }
+.btn-row { display: flex; gap: var(--space-0-5); margin-top: var(--space-0-75); }
+
+/* Tabs */
+.tabs { display: flex; gap: var(--space-0-4); margin-bottom: var(--space-0-75); }
+.tabs button { flex: 1; padding: 0.45rem; font-size: var(--fs-meta); border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--muted); transition: color 150ms, background-color 150ms, border-color 150ms; }
+.tabs button.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+.tabs button:hover:not(.active) { color: var(--fg); border-color: var(--accent); }
+
+/* Drop zone */
+.dropzone { border: 2px dashed var(--border-strong); border-radius: var(--radius-xl); padding: 1.75rem; text-align: center; cursor: pointer; transition: border-color 200ms, background-color 200ms; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--accent) 3%, transparent), transparent 70%); }
+.dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone p { color: var(--muted); margin: var(--space-0-2) 0; }
+.dropzone .big { font-size: var(--fs-0-9); color: var(--fg); }
+
+/* Meta preview */
+.meta-row { display: flex; gap: var(--space-0-5); margin-bottom: var(--space-0-3); font-size: var(--fs-0-75); }
+.meta-row .meta-label { color: var(--muted); min-width: 60px; text-align: right; }
+.meta-row .meta-value { color: var(--fg); font-family: var(--font-mono); word-break: break-all; }
+.meta-remove { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-1); padding: 0 var(--space-0-3); line-height: 1; }
+.meta-remove:hover { color: var(--red); }
+.meta-dup .meta-value { color: var(--red); }
+.meta-dup-tag { font-size: var(--fs-label); color: var(--red); background: color-mix(in srgb, var(--red) 14%, transparent); padding: 0.05rem 0.3rem; border-radius: var(--radius-sm); white-space: nowrap; margin-left: auto; }
+
+/* Connection badge */
+.conn-badge { display: inline-flex; align-items: center; gap: var(--space-0-35); font-size: var(--fs-0-72); padding: 0.15rem var(--space-0-5); border-radius: var(--radius-pill); transition: background 300ms, color 300ms; white-space: nowrap; }
+.conn-dot { width: 0.5rem; height: 0.5rem; border-radius: var(--radius-circle); }
+.conn-badge.connected { background: color-mix(in srgb, var(--green) 15%, transparent); color: var(--green); }
+.conn-badge.connected .conn-dot { background: var(--green); }
+.conn-badge.reconnecting { background: color-mix(in srgb, var(--amber) 15%, transparent); color: var(--amber); }
+.conn-badge.reconnecting .conn-dot { background: var(--amber); animation: conn-pulse 1.4s ease-in-out infinite; }
+
+
+/* Event-log audit-info grid (replaces inline styles in event_log.html) */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-0-2); font-size: var(--fs-label); margin-bottom: var(--space-0-35); overflow-wrap: anywhere; }
+.info-grid:last-child { margin-bottom: 0; }
+
+/* Task picker (goal→task association) */
+.task-picker { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.task-picker-bar { display: flex; align-items: center; gap: var(--space-0-5); padding: var(--space-0-3) var(--space-0-5); border-bottom: 1px solid var(--border); }
+.task-picker-search { flex: 1; border: none; background: transparent; padding: 0; font-size: var(--fs-0-75); color: var(--fg); min-width: 0; }
+.task-picker-search:focus { outline: none; }
+.task-picker-search::placeholder { color: var(--muted); }
+.task-picker-count { font-size: var(--fs-label); color: var(--muted); white-space: nowrap; }
+.task-picker-act { background: none; border: none; color: var(--accent); font-size: var(--fs-label); cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.task-picker-act:hover { filter: brightness(1.15); }
+.task-picker-list { max-height: 220px; overflow-y: auto; }
+.task-picker-list .hint { padding: var(--space-0-5); }
+.task-pick { display: flex; align-items: center; gap: var(--space-0-4); padding: var(--space-0-3) var(--space-0-5); cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent); transition: background-color 80ms; }
+.task-pick:last-child { border-bottom: none; }
+.task-pick:hover { background: var(--hover-overlay); }
+.task-pick input[type="checkbox"] { width: auto; margin: 0; background: none; border: none; padding: 0; accent-color: var(--accent); flex-shrink: 0; }
+.task-pick-dot { width: 0.5rem; height: 0.5rem; border-radius: var(--radius-circle); flex-shrink: 0; background: var(--muted); }
+.task-pick-dot.running { background: var(--green); }
+.task-pick-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-0-75); }
+.task-pick-tracker { font-size: var(--fs-label); color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+.task-pick.hidden { display: none; }
+.task-pick.disabled { opacity: 0.45; cursor: not-allowed; }
+.task-pick.disabled .task-pick-name { text-decoration: line-through; }
+.task-pick.disabled input[type="checkbox"] { cursor: not-allowed; }
+
+/* Utilities (replace inline style="..." attributes) */
+.mb-half { margin-bottom: var(--space-0-5); }
+.mt-half { margin-top: var(--space-0-5); }
+.mt-1 { margin-top: var(--space-1); }
+.no-underline { text-decoration: none; }
+}
+@layer modal {
+/* Modal
+ Show/hide is compositor-only: .modal-overlay.modal-closed keeps display:flex
+ (set on .modal-overlay) and toggles only visibility + opacity + pointer-events.
+ The overlay is laid out once at first paint, then toggling is a layer-only
+ opacity change - no main-thread layout, so it lands in ONE vsync (~16ms)
+ instead of TWO (~30ms). will-change:opacity pre-promotes the layer.
+ transition on visibility is delayed so the fade-out is visible before the
+ element becomes invisible; on show, visibility flips instantly then opacity
+ fades in. */
+.modal-overlay { position: fixed; inset: 0; background: var(--overlay-backdrop); display: flex; align-items: center; justify-content: center; z-index: var(--z-modal); padding: var(--space-1); contain: layout style paint; will-change: opacity; transition: opacity 120ms ease, visibility 0s; }
+.modal-overlay.modal-closed { visibility: hidden; opacity: 0; pointer-events: none; transition: opacity 120ms ease, visibility 0s 120ms; }
+#capture-modal { z-index: var(--z-modal-capture); }
+#confirm-modal { z-index: var(--z-modal-confirm); }
+.modal { background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: var(--modal-width); max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; }
+.modal-narrow { max-width: var(--modal-width-confirm); }
+.modal-capture { max-width: var(--modal-width-capture); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-1) var(--space-1-25); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface3); z-index: var(--z-sticky); }
+.modal-body { padding: var(--space-1-25); }
+.modal-close { font-size: var(--fs-1-2); color: var(--muted); padding: var(--space-0-25) var(--space-0-5); }
+.modal-close:hover { color: var(--fg); }
+
+/* Settings modal */
+.settings-modal { max-width: var(--modal-width-settings); display: flex; flex-direction: column; height: 90vh; max-height: 90vh; overflow: hidden; }
+.settings-layout { display: grid; grid-template-columns: 150px 1fr; flex: 1 1 auto; min-height: 0; }
+.settings-nav { display: flex; flex-direction: column; gap: var(--space-0-2); padding: var(--space-0-75) var(--space-0-5); border-right: 1px solid var(--border); overflow-y: auto; }
+.settings-nav button { text-align: left; padding: var(--space-0-4) var(--space-0-6); font-size: var(--fs-meta); border-radius: var(--radius-md); color: var(--muted); border: 1px solid transparent; transition: color 150ms, background-color 150ms, border-color 150ms; }
+.settings-nav button.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.settings-nav button:hover:not(.active) { color: var(--fg); background: var(--surface2); }
+.settings-content { padding: var(--space-0-75) var(--space-1-25); overflow-y: auto; }
+.settings-pane { display: none; }
+.settings-pane.active { display: block; }
+/* Two-column field layout for all settings panes except clients.
+ Fixed columns - no auto-fit, no responsive collapse - so the layout
+ stays stable across panes (prevents width recalculation on switch). */
+.settings-pane[data-section]:not([data-section="clients"]) .field {
+ display: flex; flex-direction: column;
+}
+.settings-pane[data-section]:not([data-section="clients"]) {
+ display: none;
+ grid-template-columns: 1fr 1fr;
+ gap: var(--space-0-75) var(--space-1-25);
+}
+.settings-pane.active[data-section]:not([data-section="clients"]) {
+ display: grid;
+}
+.settings-footer { padding: var(--space-0-75) var(--space-1-25); border-top: 1px solid var(--border); flex-shrink: 0; }
+.settings-footer .btn-row { margin-top: 0; }
+.settings-clients-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-0-75); }
+.settings-clients-header .hint { margin: 0; }
+.settings-clients-actions { display: flex; gap: var(--space-0-5); }
+.client-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: var(--space-0-5); transition: border-color 150ms; }
+.client-card:hover { border-color: var(--border-strong); }
+.client-card.expanded { border-color: var(--accent); }
+.client-card-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-0-5); cursor: pointer; user-select: none; padding: var(--space-0-6) var(--space-0-75); }
+.client-card-header .card-title { font-size: var(--fs-meta); display: flex; align-items: center; gap: var(--space-0-35); font-weight: 500; }
+.client-card-header .chevron { transition: transform 200ms; color: var(--muted); font-size: var(--fs-micro); }
+.client-card.collapsed .chevron { transform: rotate(-90deg); }
+.client-card-header .btn { height: 26px; padding: 0 var(--space-0-6); font-size: var(--fs-0-72); flex-shrink: 0; }
+.client-card-body { padding: 0 var(--space-0-75) var(--space-0-75); }
+.client-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-0-6) var(--space-0-75); margin-bottom: var(--space-0-5); }
+.client-section:last-child { margin-bottom: 0; }
+.section-divider { margin-top: var(--space-0-75); padding-top: var(--space-0-75); border-top: 1px solid var(--border); }
+.field-group-label { font-size: var(--fs-label); font-weight: 600; text-transform: var(--track-uppercase); letter-spacing: var(--ls-wide); color: var(--accent); margin: 0 0 var(--space-0-6); }
+.field.error input, .field.error select, .field.error textarea { border-color: var(--red); }
+.field-error { font-size: var(--fs-label); color: var(--red); margin-top: var(--space-0-2); }
+.req { color: var(--red); margin-left: 0.15rem; }
+
+/* New-task config heading */
+.config-title { font-size: var(--fs-0-8); }
+
+/* Confirm dialog */
+.confirm-title { font-size: var(--fs-0-95); }
+.confirm-message { font-size: var(--fs-0-8125); line-height: 1.6; color: var(--fg-secondary); }
+.confirm-buttons { display: flex; gap: var(--space-0-5); justify-content: flex-end; margin-top: var(--space-1-25); }
+
+@media (max-width: 600px) {
+ .settings-layout { grid-template-columns: 1fr; }
+ .settings-nav { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
+ .settings-nav button { white-space: nowrap; }
+}
+}
+@layer log {
+/* Log */
+/* scrollbar-gutter: stable reserves the scrollbar width from first paint so
+ the 200-row content (7091px in a 500px panel) doesn't cause a horizontal
+ layout shift when the scrollbar appears. contain:layout style paint
+ isolates the panel's layout from the rest of the page. */
+#log-panel { max-height: 500px; overflow-y: auto; scrollbar-gutter: stable; contain: layout style paint; }
+.log-stats { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-bottom: var(--space-0-75); }
+.log-stats .stat { text-align: center; }
+.log-stats .stat .val { font-size: var(--fs-1); }
+.log-stats .stat .lbl { font-size: var(--fs-0-62); }
+.phase-probe { color: var(--amber); }
+.phase-attack { color: var(--green); }
+.empty { color: var(--muted); text-align: center; padding: 1.5rem; font-size: var(--fs-0-82); }
+
+/* Audit info panel (replaces the inline-style block in renderLog) */
+.audit-info { margin-bottom: var(--space-0-75); padding: var(--space-0-6) var(--space-0-75); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.audit-info-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-0-35); }
+.audit-info-client-row { display: flex; gap: var(--space-0-3); font-size: var(--fs-label); margin-bottom: var(--space-0-35); }
+.audit-info-name { font-size: var(--fs-0-8); overflow-wrap: anywhere; min-width: 0; }
+.config-rows { border-top: 1px solid var(--border); padding-top: var(--space-0-35); }
+.config-rows-header { font-size: var(--fs-0-6); color: var(--muted); margin-bottom: var(--space-0-2); text-transform: var(--track-uppercase); letter-spacing: var(--ls-wider); }
+
+/* Text-color utilities (replace inline style="color:var(--…)") */
+.text-muted { color: var(--muted); }
+.text-green { color: var(--green); }
+
+/* Log row virtualization */
+/* contain-intrinsic-size must match the actual row height (34px, measured:
+ 0.4rem padding × 2 + 0.78rem font × 1.5 line-height ≈ 34px) so off-screen
+ rows don't cause a vertical layout shift when they're rendered. */
+#log-panel tbody tr:nth-child(n + 20) { content-visibility: auto; contain-intrinsic-size: auto 34px; }
+}
+@layer capture {
+/* Capture progress bar */
+.progress-bar { display: flex; gap: 2px; height: 32px; border-radius: var(--radius-lg); overflow: hidden; background: var(--surface2); }
+.progress-seg { flex: 1; display: flex; align-items: center; justify-content: center; font-size: var(--fs-0-72); font-weight: 600; color: var(--muted); background: var(--surface2); position: relative; transition: background 250ms ease, color 250ms ease; }
+.progress-seg + .progress-seg::before { content: ''; position: absolute; left: -1px; top: 6px; bottom: 6px; width: 1px; background: var(--border); }
+.progress-seg.active { color: var(--on-accent); background: var(--accent); }
+.progress-seg.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink); animation: progress-pulse 1.2s ease-in-out infinite; }
+.progress-seg.done { color: var(--ink); background: var(--green); }
+.capture-field { display: grid; grid-template-columns: 130px 1fr; gap: var(--space-0-4); padding: var(--space-0-35) 0; border-bottom: 1px solid var(--surface2); }
+.capture-field .key { color: var(--muted); font-size: var(--fs-meta); font-weight: 500; }
+.capture-field .val { font-family: var(--font-mono); font-size: var(--fs-meta); word-break: break-all; }
+.capture-field .val.pending { color: var(--muted); font-style: italic; }
+
+/* Capture modal content (replace inline style="..." attributes) */
+.capture-note { color: var(--muted); font-size: var(--fs-0-82); }
+.capture-note-spaced { margin-bottom: var(--space-0-75); }
+.capture-divider { padding-top: var(--space-0-75); border-top: 1px solid var(--border); }
+.capture-summary { cursor: pointer; color: var(--muted); font-size: var(--fs-meta); user-select: none; }
+.capture-snippet-header { display: flex; align-items: center; justify-content: space-between; }
+.capture-complete-label { font-size: var(--fs-0-8); color: var(--muted); font-weight: 500; }
+.capture-actions { display: flex; gap: var(--space-0-5); }
+}
+@layer toast {
+/* Toast */
+#toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column-reverse; gap: var(--space-0-5); z-index: var(--z-toast); }
+.toast { background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-0-75) var(--space-1); font-size: var(--fs-0-82); box-shadow: var(--shadow); animation: slidein 200ms ease; transition: opacity 200ms; max-width: 360px; }
+.toast.error { border-color: var(--red); color: var(--red); }
+.toast.success { border-color: var(--green); color: var(--green); }
+}
+@layer animations {
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes progress-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes slidein { from { transform: translateY(10px); opacity: 0; } }
+@keyframes conn-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Value-change flash */
+@keyframes flash-up { 0% { background: color-mix(in srgb, var(--green) 18%, transparent); } 100% { background: transparent; } }
+.flash { animation: flash-up 700ms ease-out; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+ <!-- Top bar -->
+ <div class="topbar">
+ <svg class="topbar-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1a1d27" stroke="#a8525a" stroke-width="1.5"/><path d="M16 7l6.2 3.6v7.2L16 21.4l-6.2-3.6v-7.2L16 7z" fill="#a8525a" fill-opacity="0.18" stroke="#a8525a" stroke-width="1.5"/><circle cx="16" cy="7" r="1.8" fill="#a8525a"/><circle cx="22.2" cy="10.6" r="1.5" fill="#a8525a"/><circle cx="22.2" cy="17.8" r="1.5" fill="#a8525a"/><circle cx="16" cy="21.4" r="1.5" fill="#a8525a"/><circle cx="9.8" cy="17.8" r="1.5" fill="#a8525a"/><circle cx="9.8" cy="10.6" r="1.5" fill="#a8525a"/><circle cx="16" cy="16" r="2.2" fill="#e6e8ee"/></svg>
+ <h1>RedSwarm</h1>
+ <div class="conn-badge connected" id="conn-badge"><span class="conn-dot"></span><span class="conn-label">Live</span></div>
+ <div class="spacer"></div>
+ <div class="stats" id="topbar-stats">{{ topbar_stats_html|safe }}</div>
+ <div class="topbar-actions">
+ <button class="btn btn-secondary" id="settings-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/><path d="M11.2 8c0-.2 0-.4-.05-.6l1.1-.85-1-1.75-1.3.5a3.7 3.7 0 0 0-1-.6L8.4 3H6.6l-.25 1.4c-.36.14-.7.34-1 .6l-1.3-.5-1 1.75 1.1.85c-.05.2-.05.4-.05.6s0 .4.05.6l-1.1.85 1 1.75 1.3-.5c.3.26.64.46 1 .6L6.6 13h1.8l.25-1.4c.36-.14.7-.34 1-.6l1.3.5 1-1.75-1.1-.85c.05-.2.05-.4.05-.6z"/></svg>Settings</button>
+ <button class="btn" id="new-audit-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg><span id="new-audit-btn-label">New task</span></button>
+ </div>
+ </div>
+
+ <!-- Body -->
+ <div class="body">
+ <div class="card">
+ <div class="card-header">
+ <div class="segmented" role="radiogroup" aria-label="View" id="table-tabs">
+ <button type="button" role="radio" data-tab="tasks" data-new-label="New task" class="active" aria-checked="true" tabindex="0">Tasks</button>
+ <button type="button" role="radio" data-tab="goals" data-new-label="New goal" aria-checked="false" tabindex="-1">Goals</button>
+ </div>
+ </div>
+ <div class="table-wrap">
+ <div id="audit-list" class="tab-panel" data-tab-content="tasks"><div>{{ task_list_html|safe }}</div></div>
+ <div id="goal-list" class="tab-panel inactive" data-tab-content="goals"><div>{{ goal_list_html|safe }}</div></div>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header">
+ <div class="card-title">Live log</div>
+ </div>
+ <div class="card-body" id="log-panel">{{ log_panel_html|safe }}</div>
+ </div>
+ </div>
+</div>
+
+<!-- Modal: New task -->
+<div class="modal-overlay modal-closed" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+ <div class="modal">
+ <div class="modal-header">
+ <div class="card-title" id="modal-title">New task</div>
+ <button class="modal-close" aria-label="Close">×</button>
+ </div>
+ <div class="modal-body">
+ <div id="torrent-input-section">
+ <div class="tabs" role="tablist">
+ <button id="tab-file" class="active" role="tab" aria-selected="true">Drop .torrent</button>
+ <button id="tab-magnet" role="tab" aria-selected="false">Paste magnet</button>
+ </div>
+ <div id="input-file">
+ <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drop a .torrent file or click to browse">
+ <p class="big">Drop .torrent file(s) here</p>
+ <p>or click to browse</p>
+ <input type="file" id="file-input" accept=".torrent" multiple class="hidden">
+ </div>
+ </div>
+ <div id="input-magnet" class="hidden">
+ <label for="magnet-input">Magnet link</label>
+ <textarea id="magnet-input" rows="3" placeholder="magnet:?xt=urn:btih:...&tr=https://tracker/announce/passkey (one per line for multiple)"></textarea>
+ </div>
+ </div>
+ <div id="meta-preview" class="hidden section-divider">
+ <!-- content rendered by showMetas() -->
+ </div>
+
+ <!-- Configuration -->
+ <div id="config-section" class="hidden section-divider">
+ <div class="card-title mb-half config-title">Configuration</div>
+
+ <div class="field mb-half">
+ <label for="cfg-client">Client emulation</label>
+ <select id="cfg-client">{{ client_dropdown_html|safe }}</select>
+ <div class="hint">Which BitTorrent client to impersonate. Auto tries each one until the tracker accepts.</div>
+ </div>
+
+ <div class="grid2 mb-half">
+ <div class="field">
+ <label>Speed strategy</label>
+ <div class="segmented" role="radiogroup" aria-label="Speed strategy">
+ <button type="button" role="radio" data-value="dynamic" class="active" aria-checked="true" tabindex="0" aria-controls="dynamic-fields">Dynamic</button>
+ <button type="button" role="radio" data-value="fixed" aria-checked="false" tabindex="-1">Fixed</button>
+ </div>
+ <div class="hint" id="cfg-strategy-hint">Adapts upload speed to live seeder/leecher counts from announce responses.</div>
+ </div>
+ <div class="field">
+ <label>Transfer mode</label>
+ <div class="segmented" role="radiogroup" aria-label="Transfer mode">
+ <button type="button" role="radio" data-value="download_and_upload" class="active" aria-checked="true" tabindex="0">Download + Upload</button>
+ <button type="button" role="radio" data-value="upload_only" aria-checked="false" tabindex="-1">Upload only</button>
+ </div>
+ <div class="hint" id="cfg-mode-hint">Leech then seed - simulates download progress before growing upload. Stealthier.</div>
+ </div>
+ </div>
+
+ <div class="grid2 mb-half">
+ <div id="upload-speed-field" class="field">
+ <label>Upload speed</label>
+ <div class="input-group">
+ <input type="number" id="cfg-upload-val" value="512" min="0" step="1">
+ <select id="cfg-upload-unit">{{ byte_unit_options_mib|safe }}</select>
+ </div>
+ <div class="hint">Target upload rate (fixed mode only).</div>
+ </div>
+ <div id="download-speed-field" class="field">
+ <label>Download speed</label>
+ <div class="input-group">
+ <input type="number" id="cfg-download-val" value="1" min="0" step="0.1">
+ <select id="cfg-download-unit">{{ byte_unit_options_mib|safe }}</select>
+ </div>
+ <div class="hint">Simulated download rate during leech phase (fixed mode only).</div>
+ </div>
+ </div>
+
+ <div class="grid3">
+ <div class="field">
+ <label for="cfg-jitter">Jitter ±%</label>
+ <input type="number" id="cfg-jitter" value="20" min="0" max="100" step="5">
+ <div class="hint">Random speed variation per tick. Constant speed is a detection tell.</div>
+ </div>
+ <div class="field">
+ <label for="cfg-ramp">Ramp (s)</label>
+ <input type="number" id="cfg-ramp" value="120" min="0" max="86400" step="10">
+ <div class="hint">Gradual speed increase from 0 to target.</div>
+ </div>
+ <div id="start-pct-field" class="field">
+ <label for="cfg-start-pct">Start at %</label>
+ <input type="number" id="cfg-start-pct" value="0" min="0" max="100" step="5">
+ <div class="hint">Pretend this percentage is already downloaded.</div>
+ </div>
+ </div>
+
+ <div id="dynamic-fields" class="conditional">
+ <div>
+ <div class="field">
+ <label for="cfg-fair-share-mult">Swarm multiplier</label>
+ <input type="number" id="cfg-fair-share-mult" value="1.0" min="0.1" max="5.0" step="0.1">
+ <div class="hint">1.0 = match swarm average, 2.0 = upload twice as fast.</div>
+ </div>
+ </div>
+ </div>
+
+ <div class="grid2">
+ <div class="field">
+ <label>Max upload</label>
+ <div class="input-group">
+ <input type="number" id="cfg-max-upload-val" value="0" min="0" step="0.1" placeholder="∞">
+ <select id="cfg-max-upload-unit">{{ byte_unit_options_mib|safe }}</select>
+ </div>
+ <div class="hint">Hard cap on upload speed. 0 = unlimited.</div>
+ </div>
+ <div class="field">
+ <label>Max download</label>
+ <div class="input-group">
+ <input type="number" id="cfg-max-download-val" value="0" min="0" step="0.1" placeholder="∞">
+ <select id="cfg-max-download-unit">{{ byte_unit_options_mib|safe }}</select>
+ </div>
+ <div class="hint">Hard cap on download speed. 0 = unlimited.</div>
+ </div>
+ </div>
+
+ <div class="field" id="cfg-freeze-upload-row">
+ <label class="switch-row" for="cfg-freeze-upload">
+ <span>Pause upload when no leechers</span>
+ <span class="switch">
+ <input type="checkbox" id="cfg-freeze-upload" checked>
+ <span class="track"><span class="thumb"></span></span>
+ </span>
+ </label>
+ <div class="hint">Stops upload growth when nobody can receive - uploading to nobody is the #1 detection vector.</div>
+ </div>
+ <div class="field" id="cfg-freeze-download-row">
+ <label class="switch-row" for="cfg-freeze-download">
+ <span>Pause download when no seeders</span>
+ <span class="switch">
+ <input type="checkbox" id="cfg-freeze-download" checked>
+ <span class="track"><span class="thumb"></span></span>
+ </span>
+ </label>
+ <div class="hint">Stops download growth when nobody can supply - downloading from nobody is impossible.</div>
+ </div>
+
+ <div class="card-title mb-half config-title">Goal</div>
+ <div class="field" id="cfg-goal-enable-row">
+ <label class="switch-row" for="cfg-goal-enable">
+ <span>Enable goal</span>
+ <span class="switch">
+ <input type="checkbox" id="cfg-goal-enable">
+ <span class="track"><span class="thumb"></span></span>
+ </span>
+ </label>
+ <div class="hint">Track a target amount. With a deadline set, the engine adjusts speed to hit it in time.</div>
+ </div>
+ <div id="cfg-goal-fields" class="conditional">
+ <div>
+ <div class="grid2 mb-half">
+ <div class="field">
+ <label for="cfg-goal-direction">Goal direction</label>
+ <select id="cfg-goal-direction">
+ <option value="upload">Upload</option>
+ <option value="download_and_upload">Download + Upload</option>
+ </select>
+ <div class="hint">Which counter grows toward the target.</div>
+ </div>
+ <div class="field">
+ <label>Goal target</label>
+ <div class="input-group">
+ <input type="number" id="cfg-goal-target-val" value="0" min="0" step="1">
+ <select id="cfg-goal-target-unit">{{ byte_amount_options_mib|safe }}</select>
+ </div>
+ <div class="hint" id="cfg-goal-target-hint">Cumulative upload bytes to reach.</div>
+ </div>
+ </div>
+ <div class="grid2 mb-half" id="cfg-goal-download-target-row">
+ <div class="field">
+ <label>Download target</label>
+ <div class="input-group">
+ <input type="number" id="cfg-goal-download-val" value="0" min="0" step="1">
+ <select id="cfg-goal-download-unit">{{ byte_amount_options_mib|safe }}</select>
+ </div>
+ <div class="hint">Cumulative download bytes to reach (download + upload only).</div>
+ </div>
+ </div>
+ <div class="grid2">
+ <div class="field">
+ <label>Goal time</label>
+ <div class="input-group">
+ <input type="number" id="cfg-goal-time-val" value="0" min="0" step="1">
+ <select id="cfg-goal-time-unit">
+ <option value="1">s</option>
+ <option value="60">m</option>
+ <option value="3600">h</option>
+ </select>
+ </div>
+ <div class="hint">Deadline from start. 0 = ETA only (no speed adjustment).</div>
+ </div>
+ </div>
+ <div class="grid2 mb-half">
+ <div class="field">
+ <label for="cfg-goal-action">On goal reached</label>
+ <select id="cfg-goal-action">
+ <option value="stop">Stop</option>
+ <option value="continue_initial">Continue (initial speed)</option>
+ <option value="continue_custom">Continue (custom speed)</option>
+ </select>
+ <div class="hint">What happens once the target is reached.</div>
+ </div>
+ <div class="field" id="cfg-goal-reached-speed-field">
+ <label>Reached speed</label>
+ <div class="input-group">
+ <input type="number" id="cfg-goal-reached-val" value="0" min="0" step="1">
+ <select id="cfg-goal-reached-unit">{{ byte_unit_options_mib|safe }}</select>
+ </div>
+ <div class="hint">Custom speed after the goal (continue_custom only). 0 = freeze.</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="btn-row">
+ <button class="btn" id="start-audit-btn" disabled>Start task</button>
+ <button class="btn btn-secondary">Cancel</button>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- Modal: Goals -->
+<div class="modal-overlay modal-closed" id="goals-modal" role="dialog" aria-modal="true" aria-labelledby="goals-modal-title">
+ <div class="modal">
+ <div class="modal-header">
+ <div class="card-title" id="goals-modal-title">New goal</div>
+ <button class="modal-close" aria-label="Close">×</button>
+ </div>
+ <div class="modal-body">
+ <div class="field mb-half">
+ <label for="goal-name">Name</label>
+ <input type="text" id="goal-name" placeholder="e.g. Seed 100 GiB">
+ </div>
+ <div class="field mb-half">
+ <label class="switch-row" for="goal-enabled">
+ <span>Enabled</span>
+ <span class="switch"><input type="checkbox" id="goal-enable" checked><span class="track"><span class="thumb"></span></span></span>
+ </label>
+ </div>
+ <div class="field mb-half">
+ <label for="goal-direction">Direction</label>
+ <select id="goal-direction">
+ <option value="upload">Upload</option>
+ <option value="download_and_upload">Download + Upload</option>
+ </select>
+ </div>
+ <div class="grid2 mb-half">
+ <div class="field">
+ <label>Upload target</label>
+ <div class="input-group">
+ <input type="number" id="goal-upload-target-val" value="0" min="0" step="0.1">
+ <select id="goal-upload-target-unit">{{ byte_amount_options_mib|safe }}</select>
+ </div>
+ </div>
+ <div class="field" id="goal-download-target-row">
+ <label>Download target</label>
+ <div class="input-group">
+ <input type="number" id="goal-download-target-val" value="0" min="0" step="0.1">
+ <select id="goal-download-target-unit">{{ byte_amount_options_mib|safe }}</select>
+ </div>
+ </div>
+ </div>
+ <div class="field mb-half">
+ <label for="goal-target-secs">Time (s)</label>
+ <input type="number" id="goal-target-secs" value="0" min="0" step="1">
+ <div class="hint">Deadline from start. 0 = ETA only.</div>
+ <div class="hint">Reached when target hit or time expires, whichever comes first.</div>
+ </div>
+ <div class="grid2 mb-half">
+ <div class="field">
+ <label for="goal-reached-action">On reached</label>
+ <select id="goal-action">
+ <option value="stop">Stop</option>
+ <option value="continue_initial">Continue (initial speed)</option>
+ <option value="continue_custom">Continue (custom speed)</option>
+ </select>
+ </div>
+ <div class="field hidden" id="goal-reached-bps-row">
+ <label>Reached speed</label>
+ <div class="input-group">
+ <input type="number" id="goal-reached-val" value="0" min="0" step="0.1">
+ <select id="goal-reached-unit">{{ byte_unit_options_mib|safe }}</select>
+ </div>
+ </div>
+ </div>
+ <div class="field mb-half">
+ <label>Associated tasks</label>
+ <div class="task-picker">
+ <div class="task-picker-bar">
+ <input type="search" id="goal-task-filter" class="task-picker-search" placeholder="Filter tasks…" autocomplete="off">
+ <span class="task-picker-count" id="goal-task-count">0 selected</span>
+ <button type="button" class="task-picker-act" data-pick="all">All</button>
+ <button type="button" class="task-picker-act" data-pick="none">None</button>
+ </div>
+ <div id="goal-task-list" class="task-picker-list"></div>
+ </div>
+ </div>
+ <div class="btn-row">
+ <button class="btn" id="save-goal-btn">Create goal</button>
+ <button class="btn btn-secondary">Cancel</button>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- Modal: Capture -->
+<div class="modal-overlay modal-closed" id="capture-modal" role="dialog" aria-modal="true" aria-labelledby="capture-title">
+ <div class="modal modal-capture">
+ <div class="modal-header">
+ <div class="card-title" id="capture-title">Client Fingerprint Capture</div>
+ <button class="modal-close" aria-label="Close">×</button>
+ </div>
+ <div class="modal-body">
+ <div id="capture-loading-section">
+ <p class="capture-note">Starting capture...</p>
+ </div>
+
+ <div id="capture-download-section" class="hidden">
+ <p class="capture-note capture-note-spaced">A .torrent was downloaded - add it to your real client. The capture starts automatically.</p>
+ <a class="btn btn-secondary no-underline" id="capture-download-link" href="#">&darr; Download again</a>
+ </div>
+
+ <div id="capture-progress-section" class="hidden capture-divider mt-1">
+ <div class="progress-bar">
+ <div class="progress-seg" id="cap-step-announce">Announce</div>
+ <div class="progress-seg" id="cap-step-handshake">Handshake</div>
+ <div class="progress-seg" id="cap-step-ext">Ext Handshake</div>
+ </div>
+ <details id="capture-fields-details" class="mt-half">
+ <summary class="capture-summary">Raw fields</summary>
+ <div id="capture-fields-raw" class="mt-half"></div>
+ </details>
+ </div>
+
+ <div id="capture-snippet-section" class="hidden mt-1">
+ <div class="capture-snippet-header mb-half">
+ <span class="capture-complete-label">Capture complete - review and edit before adding</span>
+ <div class="capture-actions">
+ <button class="btn btn-secondary">New capture</button>
+ <button class="btn btn-secondary">Copy TOML</button>
+ <button class="btn" id="capture-add-client-btn">Add client</button>
+ </div>
+ </div>
+ <div id="capture-client-card"></div>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- Modal: Settings -->
+<div class="modal-overlay modal-closed" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+ <div class="modal settings-modal">
+ <div class="modal-header">
+ <div class="card-title" id="settings-title">Settings</div>
+ <button class="modal-close" aria-label="Close">×</button> </div>
+ <div class="settings-layout">
+ <nav class="settings-nav" id="settings-nav">{{ settings_nav_html|safe }}</nav>
+ <div class="settings-content" id="settings-content">{{ settings_panes_html|safe }}</div>
+ </div>
+ <div class="settings-footer">
+ <div class="btn-row">
+ <button class="btn" id="save-settings-btn" disabled>Save</button>
+ <button class="btn btn-secondary">Cancel</button>
+ </div>
+ </div>
+ </div>
+</div>
+
+<div class="modal-overlay modal-closed" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+ <div class="modal modal-narrow">
+ <div class="modal-header">
+ <div class="card-title confirm-title" id="confirm-title"></div>
+ <button class="modal-close" aria-label="Close">×</button>
+ </div>
+ <div class="modal-body">
+ <p id="confirm-message" class="confirm-message"></p>
+ <div class="confirm-buttons" id="confirm-buttons">
+ </div>
+ </div>
+ </div>
+</div>
+
+<div id="toast-container" role="region" aria-live="polite" aria-atomic="false"></div>
+<script>window.__BOOTSTRAP__ = {{ bootstrap_json|safe }};</script>
+<script defer src="/static/bundle.4560dd6bfdf1.js"></script>
+</body>
+</html>

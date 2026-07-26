@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Zero-dependency ES module test harness for the RedSwarm frontend.">
+  <title>RedSwarm - frontend tests</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 1.25rem 1.5rem;
+      font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    h1 { font-size: 1rem; margin: 0 0 .25rem; font-weight: 600; }
+    p { margin: 0 0 1rem; color: #6b7280; font-size: .8rem; }
+    #status { margin-bottom: 1rem; font-weight: 600; }
+    #status:empty::before { content: "running…"; color: #6b7280; font-weight: 400; }
+    #status.pass { color: #15803d; }
+    #status.fail { color: #b91c1c; }
+    #results { white-space: pre-wrap; word-break: break-word; margin: 0; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0b0d10; color: #e6e6e6; }
+      p { color: #9aa0aa; }
+      #status:empty::before { color: #9aa0aa; }
+      #status.pass { color: #4ade80; }
+      #status.fail { color: #f87171; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+  <h1>Frontend test suite</h1>
+  <p>Zero-dependency ES module harness. Served from <code>/static/tests/</code>.</p>
+  <div id="status"></div>
+  <pre id="results"></pre>
+  </main>
+
+  <!-- harness.js first so its error/load listeners exist before any test module loads. -->
+  <script type="module" src="./harness.js"></script>
+  <script type="module" src="./format.test.js"></script>
+  <script type="module" src="./form.test.js"></script>
+  <script type="module" src="./client-schema.test.js"></script>
+  <script type="module" src="./capture-helpers.test.js"></script>
+  <script type="module" src="./capture-helpers-extra.test.js"></script>
+  <script type="module" src="./dom-helpers.test.js"></script>
+  <script type="module" src="./task-list-helpers.test.js"></script>
+  <script type="module" src="./paths.test.js"></script>
+  <script type="module" src="./lint.test.js"></script>
+  <script type="module" src="./exports.test.js"></script>
+  <script type="module" src="./unused.test.js"></script>
+  <script type="module" src="./dry.test.js"></script>
+  <script type="module" src="./api-paths.test.js"></script>
+  <script type="module" src="./assets.test.js"></script>
+  <script type="module" src="./modules-sync.test.js"></script>
+  <script type="module" src="./dead-exports.test.js"></script>
+  <script type="module" src="./dead-css.test.js"></script>
+  <script type="module" src="./inline-styles.test.js"></script>
+  <script type="module" src="./token-drift.test.js"></script>
+  <script type="module" src="./shared-logic.test.js"></script>
+  <script type="module" src="./dom-hooks.test.js"></script>
+  <script type="module" src="./labels-sync.test.js"></script>
+  <script type="module" src="./modal-cascade.test.js"></script>
+  <script type="module" src="./perf-transitions.test.js"></script>
+  <script type="module" src="./shared-helpers.test.js"></script>
+  <script type="module" src="./dead-state-css.test.js"></script>
+  <script type="module" src="./index-sync.test.js"></script>
+  <script type="module" src="./settings-dirty.test.js"></script>
+  <script type="module" src="./dom-id-drift.test.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+@layer log {
+/* Log */
+/* scrollbar-gutter: stable reserves the scrollbar width from first paint so
+ the 200-row content (7091px in a 500px panel) doesn't cause a horizontal
+ layout shift when the scrollbar appears. contain:layout style paint
+ isolates the panel's layout from the rest of the page. */
+#log-panel { max-height: 500px; overflow-y: auto; scrollbar-gutter: stable; contain: layout style paint; }
+.log-stats { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-bottom: var(--space-0-75); }
+.log-stats .stat { text-align: center; }
+.log-stats .stat .val { font-size: var(--fs-1); }
+.log-stats .stat .lbl { font-size: var(--fs-0-62); }
+.phase-probe { color: var(--amber); }
+.phase-attack { color: var(--green); }
+.empty { color: var(--muted); text-align: center; padding: 1.5rem; font-size: var(--fs-0-82); }
+
+/* Audit info panel (replaces the inline-style block in renderLog) */
+.audit-info { margin-bottom: var(--space-0-75); padding: var(--space-0-6) var(--space-0-75); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.audit-info-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-0-35); }
+.audit-info-client-row { display: flex; gap: var(--space-0-3); font-size: var(--fs-label); margin-bottom: var(--space-0-35); }
+.audit-info-name { font-size: var(--fs-0-8); overflow-wrap: anywhere; min-width: 0; }
+.config-rows { border-top: 1px solid var(--border); padding-top: var(--space-0-35); }
+.config-rows-header { font-size: var(--fs-0-6); color: var(--muted); margin-bottom: var(--space-0-2); text-transform: var(--track-uppercase); letter-spacing: var(--ls-wider); }
+
+/* Text-color utilities (replace inline style="color:var(--…)") */
+.text-muted { color: var(--muted); }
+.text-green { color: var(--green); }
+
+/* Log row virtualization */
+/* contain-intrinsic-size must match the actual row height (34px, measured:
+ 0.4rem padding × 2 + 0.78rem font × 1.5 line-height ≈ 34px) so off-screen
+ rows don't cause a vertical layout shift when they're rendered. */
+#log-panel tbody tr:nth-child(n + 20) { content-visibility: auto; contain-intrinsic-size: auto 34px; }
+}

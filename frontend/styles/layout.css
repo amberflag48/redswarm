@@ -1,0 +1,73 @@
+@layer layout {
+/* Layout */
+.app { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); padding: var(--space-0-75) 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+.topbar h1 { font-size: var(--fs-1-1); font-weight: 650; white-space: nowrap; }
+.topbar-logo { height: 28px; width: 28px; flex-shrink: 0; color: var(--accent); }
+.topbar .spacer { flex: 1; }
+.topbar .stats { display: flex; gap: var(--space-1); margin-left: auto; }
+.stat .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .lbl { font-size: var(--fs-micro); color: var(--muted); text-transform: var(--track-uppercase); letter-spacing: var(--ls-wide); }
+.topbar .stat { text-align: right; }
+.topbar-actions { display: inline-flex; align-items: center; gap: var(--space-0-5); }
+.body { padding: var(--space-1-25); contain: layout style paint; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: var(--space-1); overflow: hidden; }
+.card-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-0-75) var(--space-1); border-bottom: 1px solid var(--border); }
+.card-title { font-size: var(--fs-0-85); font-weight: 600; }
+.card-body { padding: var(--space-1); }
+
+/* Table */
+.table-wrap { overflow-x: auto; position: relative; min-height: 200px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums slashed-zero; }
+th, td { text-align: left; padding: var(--space-0-4) var(--space-0-6); border-bottom: 1px solid var(--border); font-size: var(--fs-meta); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: var(--fs-label); text-transform: var(--track-uppercase); letter-spacing: var(--ls-narrow); position: sticky; top: 0; background: var(--surface); z-index: var(--z-sticky); }
+th.num, td.num { text-align: right; }
+td.name-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+tbody tr:hover { background: var(--accent-soft); }
+tbody tr.active { background: var(--accent-faint); border-left: 3px solid var(--accent); }
+.task-table tbody tr { cursor: pointer; content-visibility: auto; contain-intrinsic-size: auto 33px; }
+.mono { font-family: var(--font-mono); font-size: var(--fs-0-74); font-variant-numeric: tabular-nums slashed-zero; }
+
+/* Responsive */
+/* Grid/flex items default to min-width:auto, which expands the page to
+ fit the wide task table. min-width:0 lets .table-wrap scroll
+ internally instead of pushing the whole page wide. */
+.app > * { min-width: 0; }
+
+/* Tablet (≤1024px): hide secondary task columns to avoid horizontal scroll.
+ Column order: 1=Name 2=Tracker 3=Client 4=Mode 5=Strategy 6=Uploaded 7=Downloaded 8=Status 9=Created 10=Actions */
+@media (max-width: 1024px) {
+ .task-table th:nth-child(2), .task-table td:nth-child(2),
+ .task-table th:nth-child(3), .task-table td:nth-child(3),
+ .task-table th:nth-child(5), .task-table td:nth-child(5),
+ .task-table th:nth-child(9), .task-table td:nth-child(9) { display: none; }
+}
+
+/* Mobile (≤768px): task table → stacked cards, topbar reflows */
+@media (max-width: 768px) {
+ .topbar { padding: var(--space-0-5) var(--space-0-75); gap: var(--space-0-5); }
+ .topbar h1 { font-size: var(--fs-1); }
+ .topbar-logo { height: 24px; }
+ .topbar .spacer { display: none; }
+ .topbar .stats { gap: var(--space-0-75); }
+ .body { padding: var(--space-0-75); }
+
+ .task-table thead { display: none; }
+ .task-table, .task-table tbody { display: block; width: 100%; }
+ .task-table tr { display: block; border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: var(--space-0-5); padding: var(--space-0-5) var(--space-0-75); }
+ .task-table tr:hover { background: var(--accent-soft); }
+ .task-table tr.active { background: var(--accent-faint); border-color: var(--accent); border-left-width: 1px; }
+ .task-table td { display: flex; justify-content: space-between; align-items: center; gap: var(--space-0-75); border-bottom: none; padding: var(--space-0-25) 0; white-space: normal; overflow-wrap: anywhere; }
+ .task-table td::before { content: attr(data-label); color: var(--muted); font-size: var(--fs-label); text-transform: var(--track-uppercase); letter-spacing: var(--ls-narrow); flex-shrink: 0; overflow-wrap: normal; }
+ .task-table td.name-cell { font-weight: 600; font-size: var(--fs-0-85); max-width: none; overflow: visible; text-overflow: clip; padding-bottom: var(--space-0-35); margin-bottom: var(--space-0-25); border-bottom: 1px solid var(--border); }
+ .task-table td.name-cell::before { display: none; }
+ .task-table td.actions { justify-content: flex-end; padding-top: var(--space-0-35); border-top: 1px solid var(--border); }
+ .task-table td.actions::before { display: none; }
+ .task-table td.actions { flex-wrap: wrap; }
+ .task-table td.actions button { min-height: 44px; min-width: 44px; padding: var(--space-0-4) 0.8rem; }
+
+ .info-grid { grid-template-columns: 1fr; }
+}
+}

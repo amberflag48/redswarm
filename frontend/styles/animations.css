@@ -1,0 +1,10 @@
+@layer animations {
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes progress-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes slidein { from { transform: translateY(10px); opacity: 0; } }
+@keyframes conn-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Value-change flash */
+@keyframes flash-up { 0% { background: color-mix(in srgb, var(--green) 18%, transparent); } 100% { background: transparent; } }
+.flash { animation: flash-up 700ms ease-out; }
+}
